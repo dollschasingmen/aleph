@@ -4,6 +4,7 @@ class QueryExecution
 
   def self.perform(result_id, role)
     result = Result.find(result_id)
+    csv_service = CsvService.new(result_id)
 
     unless Role.configured_connections.include?(role)
       raise "Role '#{role}' does not have connection credentials configured."
@@ -31,9 +32,13 @@ class QueryExecution
       result.mark_complete_with_count(row_count)
     end
   rescue *RedshiftPG::USER_ERROR_CLASSES => e
+    csv_service.clear_tmp_file
     result.mark_failed!(e.message)
   rescue => e
-    result.mark_failed!(e.message) if result
+    if result && csv_service
+      csv_service.clear_tmp_file
+      result.mark_failed!(e.message)
+    end
     raise
   end
 end

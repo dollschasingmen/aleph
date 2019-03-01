@@ -20,6 +20,8 @@
       = render partial: 'queries/results'
     %script#result{type: 'text/ng-template'}
       = render partial: 'results/show'
+    %script#singleResultShow{type: 'text/ng-template'}
+      = render partial: 'results/single_result_show'
     %script#visualization{type: 'text/ng-template'}
       = render partial: 'visualizations/show'
     %script#schemaIndex{type: 'text/ng-template'}
@@ -36,8 +38,12 @@
       = render partial: 'alerts/show'
     %script#snippetIndex{type: 'text/ng-template'}
       = render partial: 'snippets/index'
+    %script#runningResultIndex{type: 'text/ng-template'}
+      = render partial: 'running_results/index'
     %script#comments-template{type: 'text/ng-template'}
       = render partial: 'queries/comments'
+    %script#scheduled-template{type: 'text/ng-template'}
+      = render partial: 'queries/scheduled'
     :javascript
       window.flash = #{flash.to_hash.to_json};
   %body{ 'ng-controller' => 'BodyController',
@@ -62,6 +68,10 @@
           %a.navbar-text{href: '/schemas', 'ng-class' => "{active: pathIncludes('schemas')}"}
             %span.glyphicon.glyphicon-list.glyphicons-lg.glyphicon-med
             &nbsp;Schemas
+          %a.navbar-text{href: '/running_results', 'ng-class' => "{active: pathIncludes('running_results')}",
+                        'ng-if' => "'#{current_user.role}' == 'admin'"}
+            %span.glyphicon.glyphicon-plane.glyphicons-lg.glyphicon-low
+            &nbsp;Inflight
           %ul.nav.navbar-nav.navbar-right
             %li
               - if user_signed_in?
@@ -72,7 +82,7 @@
         %uib-alert.alert-fade-out.ellipsis{ 'ng-repeat' => 'alert in alerts',
                                             'type' => '{{alert.type}}',
                                             'close' => 'dismiss()',
-                                            'dismiss-on-timeout' => 9000,
+                                            'dismiss-on-timeout' => 5000,
                                             'ng-bind' => 'alert.message' }
       %div.content.container-fluid
         = yield

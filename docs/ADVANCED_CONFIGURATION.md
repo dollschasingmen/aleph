@@ -11,6 +11,11 @@ This configures your connection to Redshift. It only holds information about the
   - host
   - database
   - port
+  - statement_timeout
+
+
+`statement_timeout` is in milliseconds. This is field optional.
+[Read more](http://docs.aws.amazon.com/redshift/latest/dg/r_statement_timeout.html)
 
 ## Github
 Connection details to git are in [environment variables](ENVIRONMENT_VARIABLES.md). This only configures which branch your query versions are maintained on. Configuring Github is optional but highly recommended.
@@ -76,9 +81,9 @@ This file used for ingesting IDP provided user attributes into the user record; 
 
 Additionally, you need to configure `saml_issuer`, and `saml_name_identifier_format` in [config.yml](../config/example/config.yml) and have the `SAML_IDP_CERT`, `SAML_METADATA_URL`, and `SAML_SSO_TARGET` env variables set.
 
-## Alert Emails
-You can configure Aleph to email recipients about the status of Alerts. To do this you have to supply `smtp_settings` and a `default_url_host`. You will also need to set the `SMTP_PASSWORD` environment variable.
+## Emails
+You can configure Aleph to email recipients about the status of Alerts or scheduled queries. To do this you have to supply `smtp_settings` and a `default_url_host`. You will also need to set the `SMTP_PASSWORD` environment variable.
 
 This configurational is optional but important if you want to get the most out of Alerts. The below example file provides a pretty good guide.
 
-*File* - [alerts.yml](../config/example/ALERTS_CONFIG.yml)
+*File* - [email.yml](../config/example/email.yml)

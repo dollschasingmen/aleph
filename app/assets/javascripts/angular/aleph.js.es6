@@ -8,7 +8,7 @@
       'alephServices',
       'alephFilters',
       'ngAnimate',
-      'ngClipboard',
+      'angular-clipboard',
       'ui.bootstrap',
       'infinite-scroll',
       'ngTagsInput',
@@ -27,9 +27,10 @@
     }])
 
     .value('KeyBindings', {
-      saveQuery: new KeyBinding('Save Query', {mac: 'command+shift+s', win:'ctrl+shift+s'}),
-      runQuery: new KeyBinding('Run Query', {mac: 'command+shift+k', win:'ctrl+shift+k'}),
-      detectParameters: new KeyBinding('Detect Parameters', {mac: 'command+shift+p', win:'ctrl+shift+p'})
+      saveQuery: new KeyBinding('Save Query', { mac: 'command+shift+s', win: 'ctrl+shift+s' }),
+      runQuery: new KeyBinding('Run Query', { mac: 'shift+enter', win: 'shift+enter' }),
+      detectParameters: new KeyBinding('Detect Parameters', { mac: 'command+shift+p', win: 'ctrl+shift+p' }),
+      triggerAutoComplete: new KeyBinding('Trigger Autocomplete', { mac: '.', win: '.' })
     })
 
     .config(['$locationProvider', $locationProvider => {
@@ -79,11 +80,22 @@
           controller: 'AlertShowController',
           controllerAs: 'alertShowCtrl'
         })
+        .when('/results/query/:queryId/query_version/:queryVersionId/result/:resultId', {
+          templateUrl: 'singleResultShow',
+          controller: 'SingleResultShowController',
+          controllerAs: 'singleResultShowCtrl'
+        })
         .when('/snippets', {
           title: 'Snippets',
           templateUrl: 'snippetIndex',
           controller: 'SnippetIndexController',
           controllerAs: 'snippetIdxCtrl'
+        })
+        .when('/running_results', {
+          title: 'RunningResults',
+          templateUrl: 'runningResultIndex',
+          controller: 'RunningResultIndexController',
+          controllerAs: 'runningResultsIdxCtrl'
         })
         .otherwise('/queries');
     }]);

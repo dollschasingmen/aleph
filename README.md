@@ -77,7 +77,7 @@ There are a number of ways to install and deploy Aleph. The simplest is to set u
 
     # copy our aleph configuration over to the image
     ENV ALEPH_CONFIG_PATH /etc/aleph/
-    COPY aleph_conifg/. /etc/aleph/.
+    COPY aleph_config/. /etc/aleph/.
 
     # install the aleph dependencies
     RUN aleph deps
@@ -134,6 +134,7 @@ You can manage your env variables in a .env file
 
 ## Links
 
+- [Feature Notes](docs/FEATURES.md)
 - [Rubygem](https://rubygems.org/gems/aleph_analytics)
 - [aleph-user group](https://groups.google.com/forum/#!forum/aleph-user)
 

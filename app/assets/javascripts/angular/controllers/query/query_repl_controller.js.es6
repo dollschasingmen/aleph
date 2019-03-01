@@ -2,12 +2,11 @@
   'use strict';
 
   class QueryReplController {
-    constructor($uibModalInstance, getResultCsv, DefaultAceConfigurator, ResultRunner, query,
-      Results, NavigationGuard, KeyBindings, hotkeys, $scope) {
+    constructor($uibModalInstance, getResultCsv, DefaultAceConfigurator, ResultRunner, Query,
+      Results, NavigationGuard, KeyBindings, hotkeys, options, $scope) {
+        this._initQuery(options, Query);
         this._modalInstance = $uibModalInstance;
-
         this.results = new Results();
-        this.query = query;
         this.resultRunner = new ResultRunner(this.query, this.results, {
           sandbox: true,
           enablePolling: true
@@ -39,7 +38,8 @@
         let keysForAce = {
           save: this._saveKb,
           detectParameters: this._detectParametersKb,
-          run: this._runKb
+          run: this._runKb,
+          triggerAutoComplete: this._triggerAutoComplete
         };
 
         this.aceLoaded = function aceLoaded(editor) {
@@ -48,6 +48,7 @@
           editor.commands.addCommand(keysForAce.save.aceKeyCmd);
           editor.commands.addCommand(keysForAce.detectParameters.aceKeyCmd);
           editor.commands.bindKey(keysForAce.run.bindKey, keysForAce.run.keyFn);
+          editor.commands.bindKey(keysForAce.triggerAutoComplete.bindKey, keysForAce.triggerAutoComplete.keyFn);
           editor.setOptions({
             maxLines: 500,
             minLines: 2
@@ -77,12 +78,20 @@
       // need to explicity disable navigationGuard since it sometimes takes angular too long to destroy the scope
       this._navigationGuard.disable();
       this._setParameterDefaultValues(this.query.item.version.parameters, this.resultRunner.substitutionValues);
-      let result = this.results.collection.shift();
+      let result = this.results.collection[0];
+      if(this._options.skipSave) {
+        /* FIXME: this is for alerts where we want to pop up the repl and save later
+           We probably have to rethink the alerts UI/UX to take this hack out */
+        this._toModelAndClose(angular.copy(this.query.item));
+      } else {
+        this.query.save(_.exists(result) ? { result_id: result.item.id } : {})
+          .then(this._toModelAndClose.bind(this))
+          .catch(err => {
+            console.error('query save failed', err);
+            alert('Query save failed!');
+          });
+      }
 
-      this._modalInstance.close({
-        query: this.query,
-        result: _.exists(result) ? result.item : {},
-      });
     }
 
     exit() {
@@ -99,6 +108,12 @@
 
     // private methods
 
+    _toModelAndClose(item) {
+      let model = new this._Query();
+      model.internalize(item);
+      this._modalInstance.close(model);
+    }
+
     _queryBody() {
       return this.query.item.version.body;
     }
@@ -112,11 +127,27 @@
       });
     }
 
+    _initQuery(options, Query) {
+      this._Query = Query;
+      this._options = options;
+      this.query = new Query();
+      if(_.exists(options.query)) {
+        this.query.internalize(angular.copy(options.query.item));
+      } else {
+        this.query.initItem();
+      }
+    }
+
     _initKeyBindings(KeyBindings, hotkeys, $scope) {
       this._saveKb = KeyBindings.saveQuery.withKeyFn(() => {
         if(this.validToSave()) {
           this.save();
         }
+      });
+
+      this._triggerAutoComplete = KeyBindings.triggerAutoComplete.withKeyFn((editor) => {
+        editor.insert('.');
+        editor.execCommand("startAutocomplete");
       });
 
       this._runKb = KeyBindings.runQuery.withKeyFn(() => {
@@ -133,12 +164,13 @@
       hotkeys.bindTo($scope)
         .add(this._saveKb.hotKey)
         .add(this._runKb.hotKey)
+        .add(this._triggerAutoComplete.hotKey)
         .add(this._detectParametersKb.hotKey);
     }
   }
 
   QueryReplController.$inject = ['$uibModalInstance', 'getResultCsv', 'DefaultAceConfigurator', 'ResultRunner',
-    'query', 'Results', 'NavigationGuard', 'KeyBindings', 'hotkeys', '$scope'];
+    'Query', 'Results', 'NavigationGuard', 'KeyBindings', 'hotkeys', 'options', '$scope'];
 
   angular
     .module('alephControllers.queryReplController', ['alephServices'])

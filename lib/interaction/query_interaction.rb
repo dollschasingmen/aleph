@@ -8,6 +8,9 @@ module Interaction
       @tags = @params[:tags] || []
       @title = @params[:title]
       @user = @params[:user]
+      @scheduled_flag = !!@params[:scheduled_flag]
+      @email = @params[:email]
+
       @result = fetch_result
       @roles = build_roles
 

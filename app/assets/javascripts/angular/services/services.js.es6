@@ -13,6 +13,7 @@
       'alephServices.queryTab',
       'alephServices.query',
       'alephServices.queryLoader',
+      'alephServices.tagsAndRolesComparator',
 
       // visualzations
       'alephServices.visualizationService',
@@ -101,6 +102,16 @@
         newItem: { name: '', content: '' },
         resource: {
           path: '/snippets/:id.json',
+          parameters: {id: '@id'}
+        }
+      },
+
+      runningResult: {
+        //runningResult is a read only model
+        // no need for newItem since no need to figure out dirty awareness
+        newItem: {},
+        resource: {
+          path: '/running_results/:id.json',
           parameters: {id: '@id'}
         }
       },

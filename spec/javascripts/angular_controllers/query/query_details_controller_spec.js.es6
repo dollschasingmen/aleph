@@ -10,6 +10,7 @@ describe('QueryDetailsController', () => {
   let replSuccess;
   let QueryHandler;
   let query;
+  let clonedQuery;
   let form;
   let digest;
 
@@ -41,10 +42,18 @@ describe('QueryDetailsController', () => {
       readOnlyConfig: jasmine.createSpy('defaultAceConfigurator.readOnlyConfig')
     });
 
-    // construct and set jup controller
+    // Cloned query
+    clonedQuery = {
+      save: jasmine.createSpy('clonedQuery.save').and.returnValue($q.when('clonedQuery.save')),
+      destroy: jasmine.createSpy('clonedQuery.save').and.returnValue($q.when('clonedQuery.destroy')),
+      _item: { title: "Lol" }
+    };
+
+    // construct and set up controller
     query = {
       save: jasmine.createSpy('query.save').and.returnValue($q.when('query.save')),
-      destroy: jasmine.createSpy('query.save').and.returnValue($q.when('query.destroy'))
+      destroy: jasmine.createSpy('query.save').and.returnValue($q.when('query.destroy')),
+      clone: jasmine.createSpy('query.clone').and.returnValue(clonedQuery)
     };
 
     form = {
@@ -60,6 +69,8 @@ describe('QueryDetailsController', () => {
     });
 
     spyOn(QueryDetailsController, '_closeCommentDialog').and.callThrough();
+    spyOn(QueryDetailsController, '_closeScheduleDialog').and.callThrough();
+    spyOn(QueryDetailsController, '_closeDialogBoxes').and.callThrough();
   }));
 
   describe('on constructions', () => {
@@ -78,9 +89,10 @@ describe('QueryDetailsController', () => {
     });
   });
 
-  describe('#updateQuery', () => {
+  describe('#updateTitle', () => {
     beforeEach(() => {
-      QueryDetailsController.updateQuery();
+      query.isDirty = () => true;
+      QueryDetailsController.updateTitle();
     });
 
     it('calls query.save and calls down the promise chain', () => {
@@ -101,7 +113,82 @@ describe('QueryDetailsController', () => {
       });
 
       it('closes the comment dialog', () => {
+        expect(QueryDetailsController._closeDialogBoxes).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('#updateTagsAndRoles', () => {
+    beforeEach(() => {
+      query.isDirty = () => true;
+      QueryDetailsController.updateTagsAndRoles();
+    });
+
+    it('calls query.save and calls down the promise chain', () => {
+      expect(query.save).toHaveBeenCalled();
+    });
+
+    describe('on success', () => {
+      beforeEach(() => {
+        digest();
+      });
+
+      it('flash success to user', () => {
+        expect(QueryHandler.success).toHaveBeenCalled();
+      });
+
+      it('closes the comment dialog', () => {
+        expect(QueryDetailsController._closeDialogBoxes).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('#updateCommentDialogAndClose', () => {
+    beforeEach(() => {
+      query.isDirty = () => true;
+      QueryDetailsController.updateCommentDialogAndClose();
+    });
+
+    it('calls query.save and calls down the promise chain', () => {
+      expect(query.save).toHaveBeenCalled();
+    });
+
+    describe('on success', () => {
+      beforeEach(() => {
+        digest();
+      });
+
+      it('flash success to user', () => {
+        expect(QueryHandler.success).toHaveBeenCalled();
+      });
+
+      it('closes the comment dialog', () => {
         expect(QueryDetailsController._closeCommentDialog).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('#updateScheduleDialogAndClose', () => {
+    beforeEach(() => {
+      query.isDirty = () => true;
+      QueryDetailsController.updateScheduleDialogAndClose();
+    });
+
+    it('calls query.save and calls down the promise chain', () => {
+      expect(query.save).toHaveBeenCalled();
+    });
+
+    describe('on success', () => {
+      beforeEach(() => {
+        digest();
+      });
+
+      it('flash success to user', () => {
+        expect(QueryHandler.success).toHaveBeenCalled();
+      });
+
+      it('closes the comment dialog', () => {
+        expect(QueryDetailsController._closeScheduleDialog).toHaveBeenCalled();
       });
     });
   });
@@ -130,6 +217,35 @@ describe('QueryDetailsController', () => {
 
       it('closes the comment dialog', () => {
         expect(QueryDetailsController._closeCommentDialog).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('#cloneQuery', () => {
+    beforeEach(() => {
+      spyOn(QueryDetailsController, '_internalizeQueryItem').and.returnValue(clonedQuery);
+      QueryDetailsController.cloneQuery();
+    });
+
+    it('it calls query.clone', () => {
+      expect(query.clone).toHaveBeenCalled();
+    });
+
+    it('it calls query.save', () => {
+      expect(clonedQuery.save).toHaveBeenCalled();
+    });
+
+    describe('on success', () => {
+      beforeEach(() => {
+        digest();
+      });
+
+      it('calls _internalizeQueryItem', () => {
+        expect(QueryDetailsController._internalizeQueryItem).toHaveBeenCalled();
+      });
+
+      it('navigates to the cloned query page', () => {
+        expect(QueryHandler.navigateToLatestVersion).toHaveBeenCalledWith(clonedQuery);
       });
     });
   });

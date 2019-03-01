@@ -15,12 +15,15 @@ class Query < ActiveRecord::Base
   validates_presence_of :title, :latest_body, :query_versions
   validates_associated :query_versions
   before_save :strip_carriage_returns
+  after_save :create_roles
 
   delegate :version, :author_name, :results, to: :latest_query_version, prefix: :latest, allow_nil: true
   delegate :id, to: :latest_query_version, prefix: true, allow_nil: true
   delegate :to_csv, to: :latest_completed_result, allow_nil: true
+  delegate :user, to: :latest_query_version
 
   scope :with_role, ->(role) { includes(:query_roles).where(query_roles: { role: role }) }
+  scope :scheduled, -> { where(scheduled_flag: true) }
 
   LOCATIONS_FOR_ATTRIBUTES = {
     title:       { association: :base, column: :title, type: :text },
@@ -35,6 +38,12 @@ class Query < ActiveRecord::Base
 
   paginate_with LOCATIONS_FOR_ATTRIBUTES
 
+  def self.run_scheduled
+    scheduled.each do |query|
+      Resque.enqueue(ScheduledQueryExecution, query.id, query.user.role)
+    end
+  end
+
   def latest_completed_result
     latest_results.completed.last
   end
@@ -47,8 +56,20 @@ class Query < ActiveRecord::Base
     end
   end
 
+  def send_result_email
+    QueryMailer.query_result_email(self).deliver_now!
+  end
+
   def latest_query_version
     query_versions.last
+  end
+
+  def latest_result_key
+    @latest_result_key ||= "latest_#{AwsS3::S3_FOLDER}/query_#{id}.csv"
+  end
+
+  def latest_result_object_url
+    @latest_result_object_url ||= "https://s3.amazonaws.com/#{AwsS3::S3_BUCKET}/#{latest_result_key}"
   end
 
   def roles
@@ -56,8 +77,13 @@ class Query < ActiveRecord::Base
   end
 
   def set_roles(roles)
+    @roles_to_create = roles
+  end
+
+  def create_roles
+    return unless @roles_to_create.present?
     query_roles.delete_all
-    roles.each { |role| query_roles.build(role: role) }
+    @roles_to_create.each { |role| query_roles.create(role: role) }
   end
 
   def version
@@ -71,7 +97,7 @@ class Query < ActiveRecord::Base
 
   def summary
     Summarizer.new(query_versions).reduce(version: 0, comments: 0) do |qv|
-      { versions: 1, comments: qv.comment.blank? ? 0 : 1}
+      { versions: 1, comments: qv.comment.blank? ? 0 : 1 }
     end
   end
 
